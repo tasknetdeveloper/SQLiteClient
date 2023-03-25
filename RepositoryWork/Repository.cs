@@ -1,10 +1,11 @@
-﻿using SQLite;
+using SQLite;
 using Model;
 using LoggerSpace;
 namespace RepositoryWork
 {   
     public class Repository
     {
+        private const string DbDir = "Data";
         private Log log = new(true);
         private string connection = "";
         private bool isConnectionError = false;
@@ -24,24 +25,27 @@ namespace RepositoryWork
 
             if (isConnectionError) return;
 
-            var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "sqlite_hello_world");
+            var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), DbDir);
             Directory.CreateDirectory(appData);
-            this.connection = Path.Combine(appData, this.connection);
-        
+            this.connection = Path.Combine(appData, this.connection);                    
+        }
+
+        public void CreateTable<T>()
+        {
             try
             {
                 using (var cnx = new SQLiteConnection(this.connection))
                 {
-                    cnx.CreateTable<User>();
+                    cnx.CreateTable<T>();
                 }
             }
             catch (SQLiteException exp)
             {
-                log.Error($"Ini/{exp.Message}");
+                log.Error($"CreateTable/{exp.Message}");
             }
             catch (Exception exp)
             {
-                log.Error($"Ini/{exp.Message}");
+                log.Error($"CreateTable/{exp.Message}");
             }
         }
 
@@ -63,9 +67,8 @@ namespace RepositoryWork
             }
             return result;
         }
-
-        //script = $"SELECT * FROM User WHERE Name = '{Name}'"
-        public User? Get(string script)
+        
+        public User? Get(string sqlQuery)
         {
             User? result = null;
             if (isConnectionError) return result;
@@ -73,7 +76,7 @@ namespace RepositoryWork
             {
                 using (var cnx = new SQLiteConnection(this.connection))
                 {
-                    List<User> list = cnx.Query<User>(script);
+                    List<User> list = cnx.Query<User>(sqlQuery);
                     if (list != null && list.FirstOrDefault() != null)
                         result = list.FirstOrDefault();
                 }
